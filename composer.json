@@ -27,9 +27,7 @@
         "php": ">=5.6"
     },
     "autoload": {
-        "psr-0": {
-            "Trello\\": "src/"
-        }
+        "psr-4": { "Trello\\": "src/" }
     },
     "archive": {
         "exclude": ["/tests", ".git*", "phpunit.xml"]
