@@ -21,7 +21,7 @@
     ],
     "support": {
         "email": "dlowhorn@gmail.com",
-        "issues": "https://github.com/dlowhorn/php-trello",
+        "issues": "https://github.com/dlowhorn/php-trello"
     },
     "require": {
         "php": ">=5.6"
