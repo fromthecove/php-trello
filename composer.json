@@ -1,7 +1,7 @@
 {
     "name": "dlowhorn/php-trello",
     "type": "library",
-    "description": "PHP-based Trello API Wrapper",
+    "description": "PHP-based Trello API Wrapper, based on mattzuba/php-trello",
     "keywords": ["trello", "api"],
     "homepage": "https://github.com/dlowhorn/php-trello",
     "license": "MPL-2.0-no-copyleft-exception",
