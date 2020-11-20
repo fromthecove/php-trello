@@ -24,7 +24,7 @@
         "issues": "https://github.com/dlowhorn/php-trello",
     },
     "require": {
-        "php": ">=7.2.0"
+        "php": ">=5.6"
     },
     "autoload": {
         "psr-0": {
