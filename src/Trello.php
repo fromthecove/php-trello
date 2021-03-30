@@ -29,14 +29,12 @@ use Trello\OAuthSimple;
  *
  * Go to https://trello.com/1/appKey/generate to get your API and OAuth keys
  *
- * @author Matt Zuba <matt.zuba@gmail.com>
- * @author Daniel Lowhorn <dlowhorn@gmail.com>
+ * @author    Matt Zuba <matt.zuba@gmail.com>
+ * @author    Daniel Lowhorn <dlowhorn@gmail.com>
  * @copyright 2013 Matt Zuba
- * @version 1.0
- * @package php-trello
+ * @package   php-trello
  */
-class Trello
-{
+class Trello {
 
     /**
      * php-trello version
@@ -91,10 +89,11 @@ class Trello
     /**
      * __construct
      *
-     * @param  string $consumer_key
-     * @param  string $token         [optional]
-     * @param  string $shared_secret [optional]
-     * @param  string $oauth_secret  [optional]
+     * @param string $consumer_key
+     * @param string $token         [optional]
+     * @param string $shared_secret [optional]
+     * @param string $oauth_secret  [optional]
+     *
      * @throws \Exception
      */
     public function __construct($consumer_key, $shared_secret = null, $token = null, $oauth_secret = null)
@@ -106,15 +105,15 @@ class Trello
         }
 
         // Sessions are used to for OAuth
-        if (session_id() == '' && !headers_sent()) {
+        if (session_id() === '' && !headers_sent()) {
             session_start();
         }
 
-        $this->baseUrl = "$this->apiEndpoint/$this->apiVersion/";
-        $this->consumer_key = $consumer_key;
+        $this->baseUrl       = "$this->apiEndpoint/$this->apiVersion/";
+        $this->consumer_key  = $consumer_key;
         $this->shared_secret = $shared_secret;
-        $this->token = $token;
-        $this->oauth_secret = $oauth_secret;
+        $this->token         = $token;
+        $this->oauth_secret  = $oauth_secret;
     }
 
     /**
@@ -172,7 +171,8 @@ class Trello
      *
      * @return string
      */
-    public function oauthSecret() {
+    public function oauthSecret()
+    {
         return $this->oauth_secret;
     }
 
@@ -181,7 +181,8 @@ class Trello
      *
      * @param string $secret
      */
-    public function setOauthSecret($secret) {
+    public function setOauthSecret($secret)
+    {
         $this->oauth_secret = $secret;
     }
 
@@ -213,17 +214,19 @@ class Trello
      * expiration - how long will the token be good for
      * scope - what you will need access to
      *
-     * @param  array $userOptions [optional]
-     * @return void
+     * @param array   $userOptions
+     * @param boolean $return
+     *
+     * @return boolean|void
      */
-    public function authorize($userOptions = array(), $return = false)
+    public function authorize($userOptions = array(), $return = FALSE)
     {
         if ($this->authorized()) {
-            return true;
+            return TRUE;
         }
 
         if (!$this->shared_secret) {
-            return false;
+            return FALSE;
         }
 
         $oauth = new OAuthSimple($this->consumer_key, $this->shared_secret);
@@ -234,43 +237,43 @@ class Trello
             // $_SESSION[oauth_token_secret] was stored before the Authorization redirect
             $signatures = array(
                 'oauth_secret' => $_SESSION['oauth_token_secret'],
-                'oauth_token' => $_GET['oauth_token'],
+                'oauth_token'  => $_GET['oauth_token'],
             );
 
             $request = $oauth->sign(array(
-                'path' => "$this->authEndpoint/$this->apiVersion/OAuthGetAccessToken",
+                'path'       => "$this->authEndpoint/$this->apiVersion/OAuthGetAccessToken",
                 'parameters' => array(
                     'oauth_verifier' => $_GET['oauth_verifier'],
-                    'oauth_token' => $_GET['oauth_token'],
+                    'oauth_token'    => $_GET['oauth_token'],
                 ),
                 'signatures' => $signatures,
             ));
 
             // Initiate our request to get a permanent access token
             $ch = curl_init($request['signed_url']);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
             $result = curl_exec($ch);
 
             // Parse our tokens and store them
             parse_str($result, $returned_items);
-            $this->token = $returned_items['oauth_token'];
+            $this->token        = $returned_items['oauth_token'];
             $this->oauth_secret = $returned_items['oauth_token_secret'];
 
             // To prevent a refresh of the page from working to re-do this step, clear out the temp
             // access token.
             unset($_SESSION['oauth_token_secret']);
 
-            return true;
+            return TRUE;
         }
 
         $options = array_merge(array(
-            'name' => null,
+            'name'         => null,
             'redirect_uri' => $this->callbackUri(),
-            'expiration' => '30days',
-            'scope' => array(
-                'read' => true,
-                'write' => false,
-                'account' => false,
+            'expiration'   => '30days',
+            'scope'        => array(
+                'read'    => TRUE,
+                'write'   => FALSE,
+                'account' => FALSE,
             ),
         ), $userOptions);
 
@@ -278,30 +281,30 @@ class Trello
 
         // Get a request token from Trello
         $request = $oauth->sign(array(
-            'path' => "$this->authEndpoint/$this->apiVersion/OAuthGetRequestToken",
+            'path'       => "$this->authEndpoint/$this->apiVersion/OAuthGetRequestToken",
             'parameters' => array(
                 'oauth_callback' => $options['redirect_uri'],
-            )
+            ),
         ));
 
         $ch = curl_init($request['signed_url']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         $result = curl_exec($ch);
 
         // We store the token_secret for later because it's needed to get a permanent one
         parse_str($result, $returned_items);
-        $request_token = $returned_items['oauth_token'];
+        $request_token                  = $returned_items['oauth_token'];
         $_SESSION['oauth_token_secret'] = $returned_items['oauth_token_secret'];
 
         // Create and process a request with all of our options for Authorization
         $request = $oauth->sign(array(
-            'path' => "$this->authEndpoint/$this->apiVersion/OAuthAuthorizeToken",
+            'path'       => "$this->authEndpoint/$this->apiVersion/OAuthAuthorizeToken",
             'parameters' => array(
                 'oauth_token' => $request_token,
-                'name' => $options['name'],
-                'expiration' => $options['expiration'],
-                'scope' => $scope,
-            )
+                'name'        => $options['name'],
+                'expiration'  => $options['expiration'],
+                'scope'       => $scope,
+            ),
         ));
 
         if ($return) {
@@ -316,8 +319,9 @@ class Trello
      * __call
      * We use PHP's magic __call method for dynamic calling of the REST types.
      *
-     * @param  string $method
-     * @param  array $arguments
+     * @param string $method
+     * @param array  $arguments
+     *
      * @return mixed array of stdClass objects or false on failure
      * @throws \Exception
      */
@@ -325,6 +329,7 @@ class Trello
     {
         if (in_array($method, array('get', 'post', 'put', 'delete', 'del'))) {
             array_unshift($arguments, strtoupper($method));
+
             return call_user_func_array(array($this, 'rest'), $arguments);
         }
 
@@ -335,7 +340,8 @@ class Trello
      * __get
      * This is used as a shortcut for the types of collections.
      *
-     * @param  string $collection
+     * @param string $collection
+     *
      * @return \Trello\Collection
      * @throws \Exception
      */
@@ -348,7 +354,8 @@ class Trello
      * rest
      * This method actually performs the calls back to the Trello REST service
      *
-     * @param  string $method
+     * @param string $method
+     *
      * @return mixed array of stdClass objects or false on failure
      * @throws \Exception
      */
@@ -365,7 +372,7 @@ class Trello
             $restData['token'] = $this->token;
         }
 
-        if (is_array($params)) {
+        if (isset($params) && is_array($params)) {
             $restData = array_merge($restData, $params);
         }
 
@@ -373,35 +380,38 @@ class Trello
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($ch, CURLOPT_USERAGENT, "php-trello/$this->version");
         curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
 
         switch ($method) {
             case 'GET':
-                break;
+            break;
             case 'POST':
-                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POST, TRUE);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($restData, '', '&'));
                 $restData = array();
-                break;
+            break;
             case 'PUT':
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
                 curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($restData, '', '&'));
                 $restData = array();
-                break;
+            break;
             case 'DELETE':
             case 'DEL':
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-                break;
+            break;
             default:
                 throw new \Exception('Invalid method specified');
-                break;
         }
 
-        $url = $this->buildRequestUrl($method, $path, $restData);
-
+        $headers = null;
+        $url     = $this->buildRequestUrl($method, $path, $restData, $headers);
         curl_setopt($ch, CURLOPT_URL, $url);
+
+        if ($headers !== null) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, is_array($headers) ? $headers : array($headers));
+        }
 
         // Grab the response from Trello
         $responseBody = curl_exec($ch);
@@ -409,19 +419,22 @@ class Trello
 
             // If there was a CURL error of some sort, log it and return false
             $this->lastError = curl_error($ch);
-            return false;
+
+            return FALSE;
         }
 
         $responseCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $responseBody = trim($responseBody);
-        if (substr($responseCode, 0, 1) != '2') {
+        if (strpos($responseCode, '2') !== 0) {
 
             // If we didn't get a 2xx HTTP response from Trello, log the responsebody as an error
             $this->lastError = $responseBody;
-            return false;
+
+            return FALSE;
         }
 
         $this->lastError = '';
+
         return json_decode($responseBody);
     }
 
@@ -429,43 +442,54 @@ class Trello
      * buildRequestUrl
      * Parse arguments sent to the rest function.  Might be extended in future for callbacks.
      *
-     * @param  string $method
-	 * @param  string $path
-	 * @param  array $data
+     * @param string $method
+     * @param string $path
+     * @param array  $data
+     * @param mixed  $headers
+     *
      * @return string
      */
-    public function buildRequestUrl($method, $path, $data)
+    public function buildRequestUrl($method, $path, $data, &$headers)
     {
-        $url = "{$this->baseUrl}{$path}";
 
-        // If we're using oauth, account for it
-        if ($this->canOauth()) {
-            $oauth = new OAuthSimple($this->consumer_key, $this->shared_secret);
-            $oauth->setTokensAndSecrets(array('access_token' => $this->token,'access_secret' => $this->oauth_secret,))
-                  ->setParameters($data);
-            $request = $oauth->sign(array('path' => $url));
-            return $request['signed_url'];
-        } else {
-            // These methods require the data appended to the URL
-            if (in_array($method, array('GET', 'DELETE', 'DEL')) && !empty($data)) {
-                $url .= '?' . http_build_query($data, '', '&');
-            }
+        $baseUrl = $finalUrl = "{$this->baseUrl}{$path}";
 
-            return $url;
+        // These methods require the data appended to the URL
+        if (in_array($method, array('GET', 'DELETE', 'DEL')) && !empty($data)) {
+            $finalUrl .= '?' . http_build_query($data, '', '&');
         }
+
+        //
+        // If we're using oauth, account for it, using header authentication (Trello disabled param-based oauth March 31, 2021)
+        if ($this->canOauth()) {
+
+            $oauth = new OAuthSimple($this->consumer_key, $this->shared_secret);
+            $oauth
+                ->setTokensAndSecrets(array('access_token' => $this->token, 'access_secret' => $this->oauth_secret,))
+                ->setParameters()
+            ;
+
+            $request = $oauth->sign(array('path' => $baseUrl));
+            $headers = 'Authorization: ' . $request['header'];
+
+        }
+
+        return $finalUrl;
+
     }
 
     /**
      * parseRestArgs
      * Parse arguments sent to the rest function.  Might be extended in future for callbacks.
      *
-     * @param  array $args
+     * @param array $args
+     *
      * @return array
      */
     protected function parseRestArgs($args)
     {
         $opts = array(
-            'path' => '',
+            'path'   => '',
             'params' => array(),
         );
 
@@ -496,12 +520,14 @@ class Trello
      *
      * @return string
      */
-    protected function callbackUri() {
+    protected function callbackUri()
+    {
         if (empty($_SERVER['REQUEST_URI'])) {
             return '';
         }
-        $port = $_SERVER['SERVER_PORT'] == '80' || $_SERVER['SERVER_PORT'] == '443' ? '' : ":$_SERVER[SERVER_PORT]";
+        $port     = $_SERVER['SERVER_PORT'] == '80' || $_SERVER['SERVER_PORT'] == '443' ? '' : ":$_SERVER[SERVER_PORT]";
         $protocol = 'http' . (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) != 'off' ? 's://' : '://');
+
         return "{$protocol}{$_SERVER['HTTP_HOST']}{$port}{$_SERVER['REQUEST_URI']}";
     }
 
