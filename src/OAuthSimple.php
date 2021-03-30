@@ -38,18 +38,20 @@ namespace Trello;
  *
  */
 class OAuthSimple {
+
     private $_secrets;
     private $_default_signature_method;
     private $_action;
     private $_nonce_chars;
+    private $_parameters;
 
     /**
      * Constructor
      *
      * @access public
      *
-     * @param api_key (String) The API Key (sometimes referred to as the consumer key) This value is usually supplied by the site you wish to use.
-     * @param shared_secret (String) The shared secret. This value is also usually provided by the site you wish to use.
+     * @param string $APIKey The API Key (sometimes referred to as the consumer key) This value is usually supplied by the site you wish to use.
+     * @param string $sharedSecret The shared secret. This value is also usually provided by the site you wish to use.
      *
      * @return OAuthSimple (Object)
      */
@@ -68,14 +70,13 @@ class OAuthSimple {
         $this->_action                   = "GET";
         $this->_nonce_chars              = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-        return $this;
     }
 
     /**
      * Reset the parameters and URL
      *
      * @access public
-     * @return OAuthSimple (Object)
+     * @return OAuthSimple
      */
     public function reset()
     {
@@ -91,9 +92,9 @@ class OAuthSimple {
      *
      * @access public
      *
-     * @param  (string, object) List of parameters for the call, this can either be a URI string (e.g. "foo=bar&gorp=banana" or an object/hash)
+     * @param mixed $parameters List of parameters for the call, this can either be a URI string (e.g. "foo=bar&gorp=banana" or an object/hash)
      *
-     * @return OAuthSimple (Object)
+     * @return OAuthSimple
      */
     public function setParameters($parameters = Array())
     {
@@ -142,7 +143,7 @@ class OAuthSimple {
     /**
      * Set the target URL (does not include the parameters)
      *
-     * @param path (String) the fully qualified URI (excluding query arguments) (e.g "http://example.org/foo")
+     * @param string $path the fully qualified URI (excluding query arguments) (e.g "http://example.org/foo")
      *
      * @return OAuthSimple (Object)
      */
@@ -159,7 +160,7 @@ class OAuthSimple {
     /**
      * Convenience method for setURL
      *
-     * @param path (String)
+     * @param string $path
      *
      * @see setURL
      */
@@ -171,9 +172,9 @@ class OAuthSimple {
     /**
      * Set the "action" for the url, (e.g. GET,POST, DELETE, etc.)
      *
-     * @param action (String) HTTP Action word.
+     * @param string $action HTTP Action word.
      *
-     * @return OAuthSimple (Object)
+     * @return OAuthSimple
      */
     public function setAction($action)
     {
@@ -192,9 +193,9 @@ class OAuthSimple {
     /**
      * Set the signatures (as well as validate the ones you have)
      *
-     * @param signatures (object) object/hash of the token/signature pairs {api_key:, shared_secret:, oauth_token: oauth_secret:}
+     * @param mixed $signatures object/hash of the token/signature pairs {api_key:, shared_secret:, oauth_token: oauth_secret:}
      *
-     * @return OAuthSimple (Object)
+     * @return OAuthSimple
      */
     public function signatures($signatures)
     {
@@ -240,9 +241,9 @@ class OAuthSimple {
     /**
      * Set the signature method (currently only Plaintext or SHA-MAC1)
      *
-     * @param method (String) Method of signing the transaction (only PLAINTEXT and SHA-MAC1 allowed for now)
+     * @param string $method Method of signing the transaction (only PLAINTEXT and SHA-MAC1 allowed for now)
      *
-     * @return OAuthSimple (Object)
+     * @return OAuthSimple
      */
     public function setSignatureMethod($method = "")
     {
@@ -268,9 +269,9 @@ class OAuthSimple {
      * note: all arguments are optional, provided you've set them using the
      * other helper functions.
      *
-     * @param args (Array) hash of arguments for the call {action, path, parameters (array), method, signatures (array)} all arguments are optional.
+     * @param array $args hash of arguments for the call {action, path, parameters (array), method, signatures (array)} all arguments are optional.
      *
-     * @return (Array) signed values
+     * @return array
      */
     public function sign($args = array())
     {
@@ -309,9 +310,9 @@ class OAuthSimple {
      * It's not set because various set header functions prefer different
      * ways to do that.
      *
-     * @param args (Array)
+     * @param array $args
      *
-     * @return $result (String)
+     * @return string
      */
     public function getHeaderString($args = array())
     {
@@ -349,10 +350,11 @@ class OAuthSimple {
                 if (!is_array($result[$key])) {
                     $result[$key] = array($result[$key], $token);
                 } else {
-                    array_push($result[$key], $token);
+                    $result[$key][] = $token;
                 }
-            } else
+            } else {
                 $result[$key] = $token;
+            }
         }
 
         return $result;
@@ -363,10 +365,10 @@ class OAuthSimple {
         if ($string === 0) {
             return 0;
         }
-        if ($string == '0') {
+        if ($string === '0') {
             return '0';
         }
-        if (strlen($string) == 0) {
+        if ($string === '') {
             return '';
         }
         if (is_array($string)) {
@@ -375,13 +377,12 @@ class OAuthSimple {
         $string = rawurlencode($string);
 
         //FIX: rawurlencode of ~
-        $string = str_replace('%7E', '~', $string);
-        $string = str_replace('+', '%20', $string);
-        $string = str_replace('!', '%21', $string);
-        $string = str_replace('*', '%2A', $string);
-        $string = str_replace('\'', '%27', $string);
-        $string = str_replace('(', '%28', $string);
-        $string = str_replace(')', '%29', $string);
+        $string = str_replace
+        (
+            ['%7E', '+', '!', '*', '\'', '(', ')'],
+            ['~', '%20', '%21', '%2A', '%27', '%28', '%29'],
+            $string
+        );
 
         return $string;
     }
@@ -391,8 +392,8 @@ class OAuthSimple {
         $result  = '';
         $cLength = strlen($this->_nonce_chars);
         for ($i = 0; $i < $length; $i++) {
-            $rnum   = rand(0, $cLength);
-            $result .= substr($this->_nonce_chars, $rnum, 1);
+            $rnum   = mt_rand(0, $cLength);
+            $result .= $this->_nonce_chars[$rnum];
         }
         $this->_parameters['oauth_nonce'] = $result;
 
@@ -437,7 +438,7 @@ class OAuthSimple {
                 if (is_array($paramValue)) {
                     $normalized_keys[self::_oauthEscape($paramName)] = array();
                     foreach ($paramValue as $item) {
-                        array_push($normalized_keys[self::_oauthEscape($paramName)], self::_oauthEscape($item));
+                        $normalized_keys[self::_oauthEscape($paramName)][] = self::_oauthEscape($item);
                     }
                 } else {
                     $normalized_keys[self::_oauthEscape($paramName)] = self::_oauthEscape($paramValue);
@@ -451,15 +452,15 @@ class OAuthSimple {
             if (is_array($val)) {
                 sort($val);
                 foreach ($val as $element) {
-                    array_push($return_array, $key . "=" . $element);
+                    $return_array[] = $key . "=" . $element;
                 }
             } else {
-                array_push($return_array, $key . '=' . $val);
+                $return_array[] = $key . '=' . $val;
             }
 
         }
 
-        return join("&", $return_array);
+        return implode("&", $return_array);
     }
 
     private function _generateSignature()
